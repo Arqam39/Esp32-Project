@@ -1,7 +1,8 @@
 //#include <Arduino.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
-//#include <FS.h>
+#include <SPIFFS.h>
+#include <FS.h>
 
 //declaring an object of type asyncwebserver to control functions related to server defining port no 80 for server to listen to
 AsyncWebServer server(80);
@@ -37,6 +38,12 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 
 void setup() {
   Serial.begin(115200);
+
+  if(!SPIFFS.begin()){
+    Serial.println("An error has occured while mounting spiffs(uploading files in the esp)");
+    return;
+  }
+
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
@@ -56,10 +63,23 @@ void setup() {
   Serial.println(WiFi.localIP());
 
 
-//after connecting to wifi 
+//after connecting to wifi calling web socket event handler function and also passing ws object to the async webserver handler
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
 
+
+
+  server.on("/chat",HTTP_GET,[](AsyncWebServerRequest *request){
+    request->send(SPIFFS,"/chat.html","text/html");
+  });
+  server.on("/chat",HTTP_GET,[](AsyncWebServerRequest *request){
+    request->send(SPIFFS,"/chat.css","text/css");
+  });
+    server.on("/chat",HTTP_GET,[](AsyncWebServerRequest *request){
+    request->send(SPIFFS,"/chat.js","text/javascript");
+  });
+
+  //starting the server (start listening to http requests)
   server.begin();
 
 }
