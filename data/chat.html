@@ -22,7 +22,15 @@
                 document.getElementById("sendButton").disabled = false;
                 document.getElementById("disconnectButton").disabled = false;
                 document.getElementById("connectButton").disabled = true;
-                document.getElementById("nameText").disabled = true;                    
+                document.getElementById("nameText").disabled = true;  
+                
+                const objToSend = {
+                    type: 1,
+                    username: username
+                }
+                
+                const serializedObj = JSON.stringify(objToSend);    
+                ws.send(serializedObj); 
             };
             ws.onclose = function() {
                 
@@ -38,13 +46,11 @@
             ws.onmessage = function(event) {
                 
                 const receivedObj = JSON.parse(event.data);
-                const textToDisplay = `${receivedObj.username}: ${receivedObj.msg}`;
                 
-                const newChatEntryElement = document.createElement('p');
-                newChatEntryElement.textContent = textToDisplay;
+                const chatLine = GetChatLine(receivedObj);
                 
                 const chatDiv = document.getElementById("chatDiv");         
-                chatDiv.appendChild(newChatEntryElement);
+                chatDiv.appendChild(chatLine);
                 
             };
         }
@@ -52,6 +58,14 @@
         
         
         function CloseWebsocket(){
+            
+            const objToSend = {
+                type: 2,
+                username: username
+            }
+            
+            const serializedObj = JSON.stringify(objToSend);
+            ws.send(serializedObj);
             ws.close();
         }
         
@@ -63,6 +77,7 @@
             inputTextElement.value = '';
             
             const objToSend = {
+                type: 3,
                 msg: msg,
                 username: username
             }
@@ -71,27 +86,158 @@
             
             ws.send(serializedObj);
         }
+        
+        function GetChatLine(event){
+            
+            const newTag = document.createElement('span');
+            let newMsg = null;      
+            
+            newTag.classList.add('chat-tag');
+            
+            if(event.type === 1){
+                
+                newTag.classList.add('chat-tag--join');
+                newTag.textContent = `${event.username} has joined the chat.`;
+                
+            }else if(event.type === 2){
+                
+                newTag.classList.add('chat-tag--left');
+                newTag.textContent = `${event.username} has left the chat.`;
+                
+            }else{
+                
+                newTag.classList.add('chat-tag--message');
+                newTag.textContent = `${event.username}`;
+                
+                newMsg = document.createElement('span');
+                newMsg.textContent = event.msg; 
+            }
+            
+            const newChatEntryElement = document.createElement('div');
+            newChatEntryElement.appendChild(newTag);
+            
+            if(newMsg != null){
+                newChatEntryElement.appendChild(newMsg);
+            }
+            
+            return newChatEntryElement;
+            
+        }
     </script>                                   
     <style>
-        #connectButton{
-            background-color: black;
-            color: white;
+        :root {
+            --border-radius: 10px;
+        }
+        
+        .u-display--flex{
+            display:flex;
+        }
+        
+        .u-flex-grow--1{
+            flex-grow: 1;
+        }
+        
+        .connect-row{
+            margin-bottom: 20px;
+        }   
+        
+        .main-container{
+            border-radius: var(--border-radius);
+            box-shadow: 0px 1px 34px #999;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px 54px;
+        }
+        
+        .btn{
+            background-color:#4eb5f1;
+            border-radius: var(--border-radius);
+            border: none;
+            color: #ffffff;
+            margin: 0 4px 4px 0;
+            min-width: 120px;
+            padding: 8px 12px;
+        }
+        
+        .btn:disabled{
+            background-color: #cccccc;
+        }
+        
+        .btn:hover:enabled{
+            background-color: #4095c6;
+        }
+        
+        .text-input{
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius);
+            margin: 0 4px 4px 0;
+            padding: 4px 12px;
+        }
+        
+        .text-input:disabled{
+            background-color: #e9ecef;
+        }
+        
+        .text-input:focus{
+            outline: 1px solid #ced4da;
+        }
+        
+        .chat-container{
+            border: 1px solid #ced4da;
+            border-radius: var(--border-radius);
+            margin: 0 4px 4px 0;
+            padding: 6px 2px;
+        }
+        
+        .chat{
+            height: 300px;
+            overflow: auto;
+        }
+        
+        .chat-tag{
+            border-radius: var(--border-radius);
+            display: inline-block;
+            margin: 10px;
+            padding: 4px;
+        }
+        
+        .chat-tag--message{
+            background-color: #aee5cb;
+        }
+        
+        .chat-tag--join{
+            background-color: #37fdfd;
+        }
+        
+        .chat-tag--left{
+            background-color: #8f989f;
+        }
+        
+        .title{
+            margin-top: 50px;
+            text-align: center;
         }
     </style>
     
 </head>
-<body>
-    <div>
-        <input type="text" id="nameText"> 
-        <button onclick="OpenWebsocket()" id="connectButton">CONNECT</button>
+<body >
+    <div class="title">
+        <h1>ESP32 CHAT</h1>
     </div>
-    <div id="chatDiv"></div>
-    <div>
-        <input type="text" disabled id="inputText" >
-        <button onclick="SendData()" disabled id="sendButton">SEND</button>
-    </div>
-    <div>
-        <button onclick="CloseWebsocket()" disabled id="disconnectButton">DISCONNECT</button>
+    <div class = "main-container">
+        <div class = "u-display--flex connect-row">
+            <input type = "text" id = "nameText"  class = "text-input u-flex-grow--1"></input>
+            <button onclick = "OpenWebsocket()" id = "connectButton" class="btn">CONNECT</button>
+            <button onclick = "CloseWebsocket()" disabled id = "disconnectButton" class="btn">DISCONNECT</button>
+        </div>
+        <div class="chat-container">
+            <div id = "chatDiv" class="chat">               
+            </div>
+        </div>
+        <div class = "u-display--flex">
+            <input type = "text" disabled id = "inputText" class="text-input u-flex-grow--1"></input>
+            <button onclick = "SendData()"  disabled id = "sendButton" class="btn">SEND</button>
+        </div>
     </div>
 </body>
 </html>

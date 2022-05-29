@@ -72,13 +72,7 @@ void setup() {
   server.on("/chat",HTTP_GET,[](AsyncWebServerRequest *request){
     request->send(SPIFFS,"/chat.html","text/html");
   });
-  server.on("/chat",HTTP_GET,[](AsyncWebServerRequest *request){
-    request->send(SPIFFS,"/chat.css","text/css");
-  });
-    server.on("/chat",HTTP_GET,[](AsyncWebServerRequest *request){
-    request->send(SPIFFS,"/chat.js","text/javascript");
-  });
-
+ 
   //starting the server (start listening to http requests)
   server.begin();
 
